@@ -1,0 +1,112 @@
+﻿@{
+    ViewBag.Title = "Check";
+}
+
+<h2>Check</h2>
+<div id="maincontainer"></div>
+<Button id="btnSubmit">Submit</Button>
+<Button id="btnShow">Show</Button>
+
+
+<script>
+    //javascript遍历xml
+    //http://www.cnblogs.com/lastidea/articles/2818585.html
+
+    var inspectionsFromApi;
+    var inspectionsCount = 0;
+    $(function () {
+        GetInspections();
+        $('#btnSubmit').click(function () {
+            var checkedInspectionArr = [];
+            for (var i = 0; i < inspectionsCount; i++) {
+                var formId = '#radioForm' + i;
+                var hidenId = '#hidenSpanId' + i;
+                var hidenUser = '#hidenSpanUser' + i;
+                //alert(formId);
+                var checkedInspection = {
+                    IsAccepted: $('input[name=check]:checked', formId).val(),
+                    InspectionId: $(hidenId).text(),
+                    UserId: $(hidenUser).text()
+                };
+                checkedInspectionArr.push(checkedInspection);
+            }
+            PostInspections(checkedInspectionArr);
+        });
+        $('#btnShow').click(function () {
+            showItemsAnimation();
+        });
+    });
+    
+    function PostInspections(inspectionArray) {
+        //alert(inspectionArray.length);
+        //alert(inspectionArray[0].InspectionId);
+        //alert(inspectionArray[1].InspectionId);
+        $.ajax({
+            url: '/api/InspectionCustomer',
+            type: 'POST',
+            data: JSON.stringify(inspectionArray),
+            contentType: "application/json;charset=utf-8",
+            success: function (data) {
+                alert("Your order has been submited!");
+                WriteResponse(data);
+            },
+            error: function (x, y, z) {
+                alert(x + '\n' + y + '\n' + z);
+            }
+        });
+    }
+
+    function GetInspections() {
+        jQuery.support.cors = true;
+        $.ajax({
+            url: '/api/InspectionDataBase/' + 'unchecked|',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                GenerateInspectionItems(data);
+                //WriteResponse(data);
+            },
+            error: function (x, y, z) {
+                alert(x + '\n' + y + '\n' + z);
+            }
+        });
+    }
+
+    function GenerateInspectionItems(itemsArr) {
+        inspectionsCount = itemsArr.length;
+        for (var i = 0; i < itemsArr.length; i++) {
+            
+            var itemHtmlTitle = '<div style="display:inherit;" class="inspectionTitle boxshadow item' + i + '">' + itemsArr[i].Title; + '</div>';
+            $('#maincontainer').append(itemHtmlTitle);
+
+            var itemHtmlContent = '<div style="display:inherit;" class="inspectionItem boxshadow item' + i + '">';
+            itemHtmlContent += '<div>' + itemsArr[i].RecommendedAction; + '</div>';
+            itemHtmlContent += '<div>' + itemsArr[i].TechnicianAdvice; + '</div>';
+            itemHtmlContent += '<div>' + itemsArr[i].Level; + '</div>';
+            itemHtmlContent += '<div>' + itemsArr[i].TotalCost; + '</div>';
+            itemHtmlContent += '<center>';
+            itemHtmlContent += '<form id="radioForm' + i + '">';
+            itemHtmlContent += '<span id="hidenSpanId' + i + '" style="display:none;">' + itemsArr[i].InspectionId + '</span>';
+            itemHtmlContent += '<span id="hidenSpanUser' + i + '" style="display:none;">' + itemsArr[i].UserId + '</span>';
+            //itemHtmlContent += '<input type="radio" name="check" value="accepted">Accepted<br><input type="radio" name="check" value="declined">Declined';
+            itemHtmlContent += '<input type="radio" id="radioAccepted' + i + '" name="check" value="accepted" checked="">';
+            itemHtmlContent += '<label for="radioAccepted' + i + '">Accepted</label>';
+            itemHtmlContent += '<input type="radio" id="radioDeclined' + i + '" name="check" value="declined">';
+            itemHtmlContent += '<label for="radioDeclined' + i + '">Declined</label>';
+            itemHtmlContent += '</form>';
+            itemHtmlContent += '</center>';
+            itemHtmlContent += '</div>';
+            $('#maincontainer').append(itemHtmlContent);
+        }
+    }
+
+    var itemIndex = 0;
+    var item = '.item' + itemIndex;
+    function showItemsAnimation() {
+        $(item).fadeIn(1000, function () {
+            showItemsAnimation();
+            itemIndex += 1;
+        });
+    }
+
+</script>

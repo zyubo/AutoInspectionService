@@ -1,0 +1,344 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Admin</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<style>
+.partItem {
+	background-color:#77BBFF;
+	width:400px;
+	padding-left: 10px;
+	padding-top: 5px;
+	padding-bottom: 10px;
+	padding-right: 5px;
+	margin-top:2px;
+	margin-bottom:2px;
+}
+.priceItem {
+	background-color:#77BBFF;
+	width:400px;
+	padding-left: 10px;
+	padding-top: 5px;
+	padding-bottom: 10px;
+	padding-right: 5px;
+	margin-top:2px;
+	margin-bottom:2px;
+}
+.regularItem {
+	background-color:#77BBFF;
+	width:400px;
+	padding-left: 10px;
+	padding-top: 5px;
+	padding-bottom: 10px;
+	padding-right: 5px;
+	margin-top:2px;
+	margin-bottom:2px;
+}
+.headRow {
+	background-color:#3377CC;
+	width:400px;
+	padding-left: 10px;
+	padding-top: 5px;
+	padding-bottom: 10px;
+	padding-right: 5px;
+	margin-top:2px;
+	margin-bottom:2px;
+	color:#FFFFFF;
+}
+.rightMostInput {
+	float:right;
+}
+#errmsg
+{
+	color: red;
+}
+</style>
+</head>
+	<body>
+	<!--
+	Inspection ID，取自前一页（专门选择Inspection ID 的页面）的返回值，判断如果为空（不为 “To be Auto Generated” 则是要edit）年月日-客户名-VNumber-后几位用javascript随机生成，到服务端判断是否存在，存在则意味着要修改，不存在则是要添加
+	-->
+		<Button id="btnAdd">Add Item</Button>
+		<Button id="btnGet">Get Items</Button>
+		<Button id="btnParts">Get Parts List</Button>
+		<Button id="btnPrice">Get Price List</Button>
+		<Button id="btnSubmit">Submit</Button>
+		<Button id="btnShowInspection">Show Inspection</Button> <input id="inputInspection" type="text" value="20140425-username-HmrQDoVyrPLL" />
+		<div class="headRow"><span>Inspection ID:</span><span class="rightMostInput" id="inspectionId">-Will be automatically generated-</span></div>
+		<div class="headRow"><span>Basic Information</span></div>
+		<div class="regularItem"><span>Customer ID:</span><span class="rightMostInput" id="userId"><input type="text" value="Jack32445" /></span></div>
+		<div class="regularItem"><span>Vehicle ID:</span><span class="rightMostInput" id="vehicleId"><input type="text" value="5JF4EUBI5E" /></span></div>
+		<div class="regularItem"><span>Inspection Title:</span><span class="rightMostInput" id="title"><input type="text" value="Tire Act Now: Bubble in sidewall" /></span></div>
+		<div class="regularItem"><span>Recommended Action:</span><span class="rightMostInput" id="recommendedAction"><input type="text" value="Replace Front Passenger's Side Tire" /></span></div>
+		<div class="regularItem"><span>Technician's Advice:</span><span class="rightMostInput" id="technicianAdvice"><input type="text" value="TECH FOUND BUBBLE IN SIDEWALL OF RIGHT FRONT TIRE
+ Technician Advice from Mark Grayston" /></span></div>
+		<div class="regularItem"><span>Danger Level:</span><span class="rightMostInput" id="level"><input type="text" value="Middle" /></span></div>
+		<div class="regularItem"><span>Inspection Type:</span><span class="rightMostInput" id="type"><input type="text" value="Safety" /></span></div>
+		<div class="regularItem"><span>Total Cost($):</span><span class="rightMostInput" id="totalCost"><input type="text" value="359.41" /></span></div>
+		<div id="partList">
+			<div class="headRow"><span>Parts Details</span></div>
+		</div>
+        <script>
+
+            Date.prototype.Format = function (fmt) { //author: meizz 
+                var o = {
+                    "M+": this.getMonth() + 1, //月份 
+                    "d+": this.getDate(), //日 
+                    "h+": this.getHours(), //小时 
+                    "m+": this.getMinutes(), //分 
+                    "s+": this.getSeconds(), //秒 
+                    "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+                    "S": this.getMilliseconds() //毫秒 
+                };
+                if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+                for (var k in o)
+                    if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                return fmt;
+            }
+
+            var partsListXml;
+            var priceListXml;
+            var numberBox = '<input type="text" class="quantity" value="50" />';
+            var priceTable = '<div class="headRow">' +
+                        '<span>Item</span>' +
+                        '<span class="rightMostInput">Cost($)</span>' +
+                    '</div>' +
+                    '<div class="priceItem">' +
+                        '<span>Parts</span>' +
+                        '<span class="rightMostInput" id="partsVal">' + numberBox + '</span>' +
+                    '</div>' +
+                    '<div class="priceItem">' +
+                        '<span>Labor</span>' +
+                        '<span class="rightMostInput" id="laborVal">' + numberBox + '</span>' +
+                    '</div>' +
+                    '<div class="priceItem">' +
+                        '<span>Other</span>' +
+                        '<span class="rightMostInput" id="otherVal">' + numberBox + '</span>' +
+                    '</div>' +
+                    '<div class="priceItem">' +
+                        '<span>Fees</span>' +
+                        '<span class="rightMostInput" id="feesVal">' + numberBox + '</span>' +
+                    '</div>' +
+                    '<div class="priceItem">' +
+                        '<span>Tax</span>' +
+                        '<span class="rightMostInput" id="taxVal">' + numberBox + '</span>' +
+                    '</div>' +
+                    '<div class="priceItem">' +
+                        '<span>Total</span>' +
+                        '<span class="rightMostInput" id="totalVal">' + numberBox + '</span>' +
+                    '</div>';
+            var dropDownHtml = 'Part: <select>' +
+                    '<option value="engine">Engine</option>' +
+                    '<option value="tire">Tire</option>' +
+                    '<option value="light">Light</option>' +
+                    '<option value="electricity">Electricity</option>' +
+                '</select>';
+            var partItemsCount = 0;
+            $(function () {
+                //$('#inspectionId').text(new Date().Format("yyyyMMdd") + "-username-" + RandomString(12));
+                $('#btnAdd').click(function () {
+                    //$('#partList').append('<div class="partItem"><input type="file"/></div>');
+                    $('#partList').append('<div class="partItem" id="partItem' + partItemsCount + '">' + dropDownHtml + '<span style="float:right;">Cost($): ' + numberBox + '</span></div>');
+                    partItemsCount += 1;
+                    //called when key is pressed in textbox
+                    $('.quantity').keypress(function (e) {
+                        //if the letter is not digit then display error and don't type anything
+                        if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+                            //need to set background to red
+                            //$('.quantity').css('background-color','#FF0000');
+                            return false;
+                        }
+                    });
+                });
+                $('#btnGet').click(function () {
+                    var items = $('#partList').html();
+                    alert(items);
+                });
+
+                $('#btnParts').click(function () {
+                    var partsXml = '<partsList>';
+                    for (var i = 0; i < partItemsCount; i++) {
+                        var partTagId = '#partItem' + i + ' ' + 'select';
+                        var costTagId = '#partItem' + i + ' ' + 'input';
+                        partsXml += '<partItem><part>' + $(partTagId).val() + '</part><cost>' + $(costTagId).val() + '</cost></partItem>';
+                    }
+                    partsXml += '</partsList>';
+                    //var value = $('.partItem input').val();
+                    alert(partsXml);
+                });
+
+                $('#btnPrice').click(function () {
+                    var priceXml = '<priceList>';
+                    priceXml += '<parts>' + $('#partsVal input').val() + '</parts>';
+                    priceXml += '<labor>' + $('#laborVal input').val() + '</labor>';
+                    priceXml += '<other>' + $('#otherVal input').val() + '</other>';
+                    priceXml += '<fees>' + $('#feesVal input').val() + '</fees>';
+                    priceXml += '<tax>' + $('#taxVal input').val() + '</tax>';
+                    priceXml += '<total>' + $('#totalVal input').val() + '</total>';
+                    priceXml += '</priceList>';
+                    //var value = $('.partItem input').val();
+                    alert(priceXml);
+                });
+
+                $('body').append(priceTable);
+                $('.quantity').keypress(function (e) {
+                    //if the letter is not digit then display error and don't type anything
+                    if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+                        //need to set background to red
+                        //$('.quantity').css('background-color','#FF0000');
+                        return false;
+                    }
+                });
+
+                $('#btnShowInspection').click(function () {
+                    var isp = $('#inputInspection').val();
+                    GetInspectionById(isp);
+                });
+
+                $('#btnSubmit').click(function () {
+                    CollectAndSubmitData();
+                });
+
+            });
+
+            function CollectAndSubmitData() {
+                partsListXml = GetPartsList();
+                priceListXml = GetPriceList();
+                AddOrModifyInspectionAjax();
+            }
+
+            function GetPartsList() {
+                var partsXml = '<partsList>';
+                for (var i = 0; i < partItemsCount; i++) {
+                    var partTagId = '#partItem' + i + ' ' + 'select';
+                    var costTagId = '#partItem' + i + ' ' + 'input';
+                    partsXml += '<partItem><part>' + $(partTagId).val() + '</part><cost>' + $(costTagId).val() + '</cost></partItem>';
+                }
+                partsXml += '</partsList>';
+                return partsXml;
+            }
+
+            function GetPriceList() {
+                var priceXml = '<priceList>';
+                priceXml += '<parts>' + $('#partsVal input').val() + '</parts>';
+                priceXml += '<labor>' + $('#laborVal input').val() + '</labor>';
+                priceXml += '<other>' + $('#otherVal input').val() + '</other>';
+                priceXml += '<fees>' + $('#feesVal input').val() + '</fees>';
+                priceXml += '<tax>' + $('#taxVal input').val() + '</tax>';
+                priceXml += '<total>' + $('#totalVal input').val() + '</total>';
+                priceXml += '</priceList>';
+                return priceXml;
+            }
+
+            function PopupFields(inspectionModel) {
+
+                $('#inspectionId').text(inspectionModel.InspectionId);
+
+                var xmlPriceList = inspectionModel.PriceList,
+                xmlDoc = $.parseXML(xmlPriceList),
+                $xml = $(xmlDoc),
+                $parts = $xml.find("parts");
+                $labor = $xml.find("labor");
+                $other = $xml.find("other");
+                $fees = $xml.find("fees");
+                $tax = $xml.find("tax");
+                $total = $xml.find("total");
+
+                $('#partsVal input').val($parts.text());
+                $('#laborVal input').val($labor.text());
+                $('#otherVal input').val($other.text());
+                $('#feesVal input').val($fees.text());
+                $('#taxVal input').val($tax.text());
+                $('#totalVal input').val($total.text());
+
+                $('#userId input').val(inspectionModel.UserId);
+                $('#vehicleId input').val(inspectionModel.VehicleId);
+                $('#title input').val(inspectionModel.Title);
+                $('#level input').val(inspectionModel.Level);
+                $('#type input').val(inspectionModel.Type);
+                $('#recommendedAction input').val(inspectionModel.RecommendedAction);
+                $('#technicianAdvice input').val(inspectionModel.TechnicianAdvice);
+                $('#totalCost input').val(inspectionModel.TotalCost);
+
+                //for (var i = 0; i < partItemsCount; i++) {
+                //    var partTagId = '#partItem' + i + ' ' + 'select';
+                //    var costTagId = '#partItem' + i + ' ' + 'input';
+                //    partsXml += '<partItem><part>' + $(partTagId).val() + '</part><cost>' + $(costTagId).val() + '</cost></partItem>';
+                //}
+            }
+
+            function GetInspectionById(inspectionId) {
+                jQuery.support.cors = true;
+                $.ajax({
+                    url: '/api/InspectionDataBase/' + 'single|' + inspectionId,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        PopupFields(data[0]);
+                        WriteResponse(data);
+                    },
+                    error: function (x, y, z) {
+                        alert(x + '\n' + y + '\n' + z);
+                    }
+                });
+            }
+
+
+            function AddOrModifyInspectionAjax() {
+                jQuery.support.cors = true;
+                var tempId = $('#inspectionId').text();
+                if (tempId == "-Will be automatically generated-") {
+                    tempId = new Date().Format("yyyyMMdd") + "-username-" + RandomString(12);
+                }
+                $('#inspectionId').text(tempId);
+                var inspection = {
+                    InspectionId: tempId,
+                    UserId: $('#userId input').val(),
+                    VehicleId: $('#vehicleId input').val(),
+                    Title: $('#title input').val(),
+                    Level: $('#level input').val(),
+                    Type: $('#type input').val(),
+                    RecommendedAction: $('#recommendedAction input').val(),
+                    TechnicianAdvice: $('#technicianAdvice input').val(),
+                    PartsList: partsListXml,
+                    PriceList: priceListXml,
+                    TotalCost: $('#totalCost input').val()
+                };
+
+                $.ajax({
+                    url: '/api/InspectionDataBase',
+                    type: 'POST',
+                    data: JSON.stringify(inspection),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        alert("Inspection " + inspection.inspectionId.toString() + " updated!");
+                        WriteResponse(data);
+                    },
+                    error: function (x, y, z) {
+                        alert(x + '\n' + y + '\n' + z);
+                    }
+                });
+            }
+
+            function RandomString(length) {
+                var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
+
+                if (!length) {
+                    length = Math.floor(Math.random() * chars.length);
+                }
+
+                var str = '';
+                for (var i = 0; i < length; i++) {
+                    str += chars[Math.floor(Math.random() * chars.length)];
+                }
+                return str;
+            }
+        </script>
+    </body>
+</html>
